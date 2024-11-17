@@ -1,13 +1,16 @@
 from app.extensions import db, cache
 from app.models.user import User
 from typing import Optional, List
+from app.utils.cache_monitoring import CacheMonitor, cache_logger
 
 # Сервис для работы с пользователями
 class UserService:
+    # @CacheMonitor.monitor_cache_operation('read')
     @cache.cached(timeout=300, key_prefix='all_users')
     def get_all_users(self) -> List[User]:
         return User.query.all()
 
+    # @CacheMonitor.monitor_cache_operation('read')
     @cache.memoize(timeout=300)
     def get_user_by_id(self, user_id: int) -> Optional[User]:
         return User.query.get_or_404(user_id)
