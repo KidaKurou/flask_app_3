@@ -1,0 +1,34 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:5000" # host:container port
+    depends_on:
+      db: # контейнер app запускается после запуска контейнера db
+        condition: service_healthy # если контейнер db доступен
+    environment: # переменные окружения
+      - "DB_URL=postgresql://postgres:postgres@db:5432/flask_db" # подключение к БД
+    volumes: # монтирование директории внутри контейнера
+      - .:/app # монтирование текущего каталога внутри контейнера
+    restart: unless-stopped # перезапуск контейнера если он умирает
+
+  db:
+    image: postgres:13.1-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - "POSTGRES_USER=postgres" # логин пользователя для подключения к БД
+      - "POSTGRES_PASSWORD=postgres" # пароль пользователя
+      - "POSTGRES_DB=flask_db" # имя БД
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck: # проверка доступности БД
+      test: ["CMD-SHELL", "pg_isready -U postgres"] # команда проверки доступности БД
+      interval: 5s # проверять каждые 5 секунд
+      timeout: 5s # проверять не более 5 секунд
+      retries: 5 # проверять не более 5 раз
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+    driver: local
