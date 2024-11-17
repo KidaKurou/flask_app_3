@@ -36,12 +36,7 @@ def create_app(config_name='default'):
     @cache.cached(timeout=60)
     def get_data():
         # Эмуляция долгого запроса
-        app.logger.info('Redis info: %s', get_redis_info())
         app.logger.info('Получен запрос к маршруту /data')
         return jsonify({'data': 'This is some data!'})
 
     return app
-
-# Функция для получения информации о Redis
-def get_redis_info():
-    return cache.get_redis_connection().info()

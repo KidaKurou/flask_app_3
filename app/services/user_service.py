@@ -8,7 +8,7 @@ class UserService:
     def get_all_users(self) -> List[User]:
         return User.query.all()
 
-    @cache.memoize(timeout=300, key_prefix='user_by_id')
+    @cache.memoize(timeout=300)
     def get_user_by_id(self, user_id: int) -> Optional[User]:
         return User.query.get_or_404(user_id)
 
