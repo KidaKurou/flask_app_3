@@ -6,8 +6,12 @@ services:
     depends_on:
       db: # контейнер app запускается после запуска контейнера db
         condition: service_healthy # если контейнер db доступен
+      redis:
+        condition: service_healthy
     environment: # переменные окружения
-      - "DB_URL=postgresql://postgres:postgres@db:5432/flask_db" # подключение к БД
+      - "DB_URL=postgresql://postgres:postgres@db:5432/flask_db"
+      - "REDIS_URL=redis://redis:6379/0"
+      - "REDIS_HOST=redis" # имя контейнера redis
     volumes: # монтирование директории внутри контейнера
       - .:/app # монтирование текущего каталога внутри контейнера
     restart: unless-stopped # перезапуск контейнера если он умирает
@@ -29,6 +33,21 @@ services:
       retries: 5 # проверять не более 5 раз
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/var/lib/redis/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
 volumes:
+  redisdata:
+    driver: local
   pgdata:
     driver: local
