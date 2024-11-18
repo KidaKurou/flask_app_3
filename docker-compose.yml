@@ -2,7 +2,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: dockerfile
+      dockerfile: docker/Dockerfile.prod
     ports:
       - "3000:5000" # host:container port
     depends_on:
@@ -10,44 +10,47 @@ services:
         condition: service_healthy # если контейнер db доступен
       redis:
         condition: service_healthy
-    environment: # переменные окружения
+    environment:
       - "DB_URL=postgresql://postgres:postgres@db:5432/flask_db"
       - "REDIS_URL=redis://redis:6379/0"
-      - "REDIS_HOST=redis" # имя контейнера redis
-    volumes: # монтирование директории внутри контейнера
+      - "REDIS_HOST=redis"
+    volumes:
       - .:/app # монтирование текущего каталога внутри контейнера
     restart: unless-stopped # перезапуск контейнера если он умирает
-
-  # test:
-  #   build:
-  #     context: .
-  #     target: tester
-  #   ports:
-  #     - "3001:5000" # host:container port
-  #   depends_on:
-  #     db: 
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
-  #     app:
-  #       condition: service_healthy
-  #   environment:
-  #     - "FLASK_ENV=testing"
-  #     - "DB_URL=postgresql://postgres:postgres@db:5432/flask_db"
-  #     - "REDIS_URL=redis://redis:6379/0"
-  #     - "REDIS_HOST=redis"
-  #   volumes:
-  #     - .:/tests
-  #   restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 5s
+    
+  test:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.test
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - "FLASK_ENV=testing"
+      - "DB_URL=postgresql://postgres:postgres@db:5432/flask_db_test"
+      - "REDIS_URL=redis://redis:6379/1"
+      - "REDIS_HOST=redis"
+    volumes:
+      - .:/app
+      - test-results:/app/test-results
+    restart: unless-stopped
 
   db:
     image: postgres:13.1-alpine
     ports:
       - "5432:5432"
     environment:
-      - "POSTGRES_USER=postgres" # логин пользователя для подключения к БД
-      - "POSTGRES_PASSWORD=postgres" # пароль пользователя
-      - "POSTGRES_DB=flask_db" # имя БД
+      - "POSTGRES_USER=postgres"
+      - "POSTGRES_PASSWORD=postgres"
+      - "POSTGRES_DB=flask_db"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck: # проверка доступности БД
@@ -74,4 +77,6 @@ volumes:
   redisdata:
     driver: local
   pgdata:
+    driver: local
+  test-results:
     driver: local

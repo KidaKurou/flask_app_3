@@ -1,0 +1,21 @@
+# Production Dockerfile
+FROM python:3.9-alpine AS builder
+WORKDIR /app
+RUN apk add --update --no-cache postgresql-dev gcc python3-dev musl-dev
+COPY requirements.txt .
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
+
+FROM python:3.9-alpine AS prod
+RUN apk add --update --no-cache libpq curl
+RUN adduser -D appuser
+WORKDIR /app
+COPY --from=builder /app/wheels /wheels
+COPY --from=builder /app/requirements.txt .
+RUN pip install --no-cache /wheels/* && rm -rf /wheels && rm -rf requirements.txt
+COPY . .
+RUN chown -R appuser:appuser /app
+USER appuser
+EXPOSE 5000
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5000/health || exit 1
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "run:app"]
