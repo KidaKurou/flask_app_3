@@ -1,5 +1,5 @@
 # Этап сборки
-FROM python:3.9-alpine as builder
+FROM python:3.9-alpine AS builder
 WORKDIR /app
 # Установка необходимых системных пакетов
 RUN apk add --update --no-cache postgresql-dev gcc python3-dev musl-dev
@@ -7,8 +7,16 @@ RUN apk add --update --no-cache postgresql-dev gcc python3-dev musl-dev
 COPY requirements.txt .
 RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
 
+# Этап тесирования
+# FROM python:3.9-alpine AS tester
+# WORKDIR /tests
+# COPY requirements.txt .
+# RUN pip install --no-cache-dir --no-deps -r requirements.txt
+# COPY . .
+# CMD ["pytest"]
+
 # Используем базовый образ Python
-FROM python:3.9-alpine
+FROM python:3.9-alpine AS prod
 # Установка необходимых системных пакетов
 RUN apk add --update --no-cache libpq curl
 # Создаем непривилегированного пользователя
