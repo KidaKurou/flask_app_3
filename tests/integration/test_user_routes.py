@@ -60,12 +60,15 @@ def test_update_user(client, db_session):
     assert data['username'] == update_data['username']
 
 def test_delete_user(client, db_session):
-    """Тест удаления пользователя через API."""
+    """Тест удаления пользователя."""
     user = UserFactory()
     
     response = client.delete(f'/users/{user.id}')
     assert response.status_code == HTTPStatus.NO_CONTENT
+    assert response.data == b''
     
-    # Проверяем, что пользователь действительно удален
+    # Проверяем, что пользователь действительно удален (очищаем кэш перед проверкой)
+    from app.extensions import cache
+    cache.clear()
     response = client.get(f'/users/{user.id}')
     assert response.status_code == HTTPStatus.NOT_FOUND

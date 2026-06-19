@@ -9,6 +9,11 @@ class TestConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
     REDIS_URL = 'redis://localhost:6379/1'
+    CACHE_TYPE = 'SimpleCache'
+    CACHE_REDIS_HOST = None
+    CACHE_REDIS_PORT = None
+    CACHE_REDIS_DB = None
+    CACHE_REDIS_URL = None
     
 @pytest.fixture
 def app():
@@ -50,6 +55,10 @@ def db_session(app):
         # Привязываем сессию к транзакции
         session = db.create_scoped_session()
         db.session = session
+        
+        # Перенаправляем фабрику на транзакционную сессию
+        from tests.factories.user_factory import UserFactory
+        UserFactory._meta.sqlalchemy_session = session
         
         yield session
         

@@ -7,7 +7,11 @@ def create_app(config_name='default'):
     app = Flask(__name__)
     
     # Загрузка конфигурации
-    app.config.from_object(config[config_name])
+    if isinstance(config_name, str):
+        app.config.from_object(config[config_name])
+    else:
+        # Если передан объект конфигурации, используем его напрямую
+        app.config.from_object(config_name)
     
     # Настройка логирования
     logging.basicConfig(
@@ -26,6 +30,8 @@ def create_app(config_name='default'):
     # Регистрация blueprints
     from app.api.routes.user_routes import user_bp
     app.register_blueprint(user_bp)
+    from app.api.routes.cache_routes import bp as cache_bp
+    app.register_blueprint(cache_bp)
 
     @app.route('/')
     def hello_world():

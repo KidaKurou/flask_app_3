@@ -13,7 +13,7 @@ class UserService:
     # @CacheMonitor.monitor_cache_operation('read')
     @cache.memoize(timeout=300)
     def get_user_by_id(self, user_id: int) -> Optional[User]:
-        return User.query.get_or_404(user_id)
+        return User.query.get(user_id)
 
     def create_user(self, data: dict) -> User:
         user = User(**data)
@@ -41,6 +41,8 @@ class UserService:
             db.session.commit()
             # Инвалидируем кэш после удаления пользователя
             self._invalidate_caches(user_id)
+            # Очищаем кэш сессии, чтобы get_user_by_id не возвращал удалённый объект
+            db.session.expire_all()
             return True
         return False
     
@@ -48,4 +50,4 @@ class UserService:
     def _invalidate_caches(self, user_id: Optional[int] = None):
         cache.delete_memoized(self.get_all_users)
         if user_id:
-            cache.delete_memoized(self.get_user_by_id)
+            cache.delete_memoized(self.get_user_by_id, user_id)
